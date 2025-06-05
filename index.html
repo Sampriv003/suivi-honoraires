@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi des Honoraires - Chirurgie Plastique</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="max-w-7xl mx-auto p-6 bg-white min-h-screen">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Relevé d'Honoraires Quotidien</h1>
+            <p class="text-gray-600">Chirurgie Plastique - Paris</p>
+        </div>
+
+        <!-- Formulaire d'ajout -->
+        <div class="bg-blue-50 p-6 rounded-lg mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-blue-800">Ajouter un acte</h2>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Type d'acte</label>
+                    <select id="actType" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                        <option value="consultation">Consultation</option>
+                        <option value="chirurgie_dermato">Chirurgie dermatologique</option>
+                        <option value="toxine">Toxine botulique</option>
+                        <option value="acide">Acide hyaluronique</option>
+                        <option value="profilho">Profilho</option>
+                        <option value="sculptra">Sculptra</option>
+                        <option value="bloc">Chirurgie bloc opératoire</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Prix unitaire</label>
+                    <select id="actPrice" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                        <option value="70">70€</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Quantité</label>
+                    <input type="number" id="actQuantity" value="1" min="1" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-center">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Total brut</label>
+                    <div id="totalBrut" class="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-center font-medium">70.00€</div>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="addAct()" class="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 transition-colors">
+                        ➕ Ajouter
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Totaux -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-blue-50 p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-medium text-blue-700">Total actes</h3>
+                    <span class="text-2xl">🧮</span>
+                </div>
+                <p id="totalActs" class="text-3xl font-bold text-blue-800">0</p>
+            </div>
+            <div class="bg-orange-50 p-6 rounded-lg">
+                <h3 class="text-lg font-medium text-orange-700">Honoraires bruts</h3>
+                <p id="totalGross" class="text-3xl font-bold text-orange-800">0.00€</p>
+            </div>
+            <div class="bg-green-50 p-6 rounded-lg">
+                <h3 class="text-lg font-medium text-green-700">Honoraires perçus</h3>
+                <p id="totalNet" class="text-3xl font-bold text-green-800">0.00€</p>
+            </div>
+        </div>
+
+        <!-- Liste des actes -->
+        <div id="actsList" class="bg-white border border-gray-200 rounded-lg overflow-hidden mb-6" style="display: none;">
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-800">Détail des actes de la journée</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Heure</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type d'acte</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lieu</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantité</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prix unitaire</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total brut</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commission</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total net</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="actsTableBody" class="bg-white divide-y divide-gray-200">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="flex flex-wrap gap-4 mb-8">
+            <button onclick="resetAll()" class="bg-gray-600 text-white px-6 py-3 rounded-md hover:bg-gray-700 transition-colors">
+                🔄 Réinitialiser
+            </button>
+            <button onclick="saveSession()" class="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 transition-colors">
+                💾 Sauvegarder
+            </button>
+            <button id="exportBtn" onclick="exportToCSV()" class="bg-orange-600 text-white px-6 py-3 rounded-md hover:bg-orange-700 transition-colors" style="display: none;">
+                📥 Exporter en CSV
+            </button>
+        </div>
+
+        <!-- Informations redevances -->
+        <div class="bg-gray-50 p-6 rounded-lg">
+            <h3 class="text-lg font-semibold mb-4 text-gray-800">Barème des redevances</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-2">Cabinet (60% reversés)</h4>
+                    <ul class="space-y-1 text-gray-600">
+                        <li>• Consultations</li>
+                        <li>• Chirurgie dermatologique</li>
+                        <li>• Toxine botulique</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-2">Injections (30% reversés) & Clinique (60%)</h4>
+                    <ul class="space-y-1 text-gray-600">
+                        <li>• Acide hyaluronique (30%)</li>
+                        <li>• Profilho (30%)</li>
+                        <li>• Sculptra (30%)</li>
+                        <li>• Chirurgie bloc opératoire (60%)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration des actes
+        const actTypes = {
+            consultation: { 
+                label: 'Consultation', 
+                commission: 0.6, 
+                location: 'Cabinet',
+                priceOptions: [{ value: 70, label: '70€' }]
+            },
+            chirurgie_dermato: { 
+                label: 'Chirurgie dermatologique', 
+                commission: 0.6, 
+                location: 'Cabinet',
+                priceOptions: [
+                    { value: 100, label: '100€' },
+                    { value: 150, label: '150€' },
+                    { value: 200, label: '200€' },
+                    { value: 250, label: '250€' },
+                    { value: 300, label: '300€' },
+                    { value: 350, label: '350€' },
+                    { value: 400, label: '400€' }
+                ]
+            },
+            toxine: { 
+                label: 'Toxine botulique', 
+                commission: 0.6, 
+                location: 'Cabinet',
+                priceOptions: [
+                    { value: 350, label: '350€' },
+                    { value: 300, label: '300€' }
+                ]
+            },
+            acide: { 
+                label: 'Acide hyaluronique', 
+                commission: 0.3, 
+                location: 'Cabinet',
+                priceOptions: [{ value: 380, label: '380€' }]
+            },
+            profilho: { 
+                label: 'Profilho', 
+                commission: 0.3, 
+                location: 'Cabinet',
+                priceOptions: [{ value: 400, label: '400€' }]
+            },
+            sculptra: { 
+                label: 'Sculptra', 
+                commission: 0.3, 
+                location: 'Cabinet',
+                priceOptions: [{ value: 2000, label: '2000€' }]
+            },
+            bloc: { 
+                label: 'Chirurgie bloc opératoire', 
+                commission: 0.6, 
+                location: 'Clinique',
+                priceOptions: [
+                    { value: 800, label: '800€' },
+                    { value: 1000, label: '1000€' },
+                    { value: 1500, label: '1500€' },
+                    { value: 2000, label: '2000€' },
+                    { value: 3000, label: '3000€' }
+                ]
+            }
+        };
+
+        let actsList = [];
+
+        // Mise à jour des prix selon le type d'acte
+        document.getElementById('actType').addEventListener('change', function() {
+            const type = this.value;
+            const priceSelect = document.getElementById('actPrice');
+            const config = actTypes[type];
+            
+            priceSelect.innerHTML = '';
+            config.priceOptions.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.value;
+                optionElement.textContent = option.label;
+                priceSelect.appendChild(optionElement);
+            });
+            
+            updateTotalBrut();
+        });
+
+        // Mise à jour du total brut
+        function updateTotalBrut() {
+            const quantity = parseInt(document.getElementById('actQuantity').value) || 1;
+            const price = parseFloat(document.getElementById('actPrice').value) || 0;
+            const total = quantity * price;
+            document.getElementById('totalBrut').textContent = total.toFixed(2) + '€';
+        }
+
+        document.getElementById('actPrice').addEventListener('change', updateTotalBrut);
+        document.getElementById('actQuantity').addEventListener('input', updateTotalBrut);
+
+        // Ajouter un acte
+        function addAct() {
+            const type = document.getElementById('actType').value;
+            const price = parseFloat(document.getElementById('actPrice').value);
+            const quantity = parseInt(document.getElementById('actQuantity').value);
+            
+            if (quantity <= 0) {
+                alert('Veuillez saisir une quantité valide');
+                return;
+            }
+
+            const config = actTypes[type];
+            const totalBrut = quantity * price;
+            const totalNet = totalBrut * config.commission;
+
+            const newAct = {
+                id: Date.now(),
+                type: type,
+                label: config.label,
+                location: config.location,
+                quantity: quantity,
+                price: price,
+                totalBrut: totalBrut,
+                totalNet: totalNet,
+                commission: config.commission,
+                timestamp: new Date().toLocaleString('fr-FR')
+            };
+
+            actsList.push(newAct);
+            updateDisplay();
+            resetForm();
+        }
+
+        // Supprimer un acte
+        function removeAct(id) {
+            actsList = actsList.filter(act => act.id !== id);
+            updateDisplay();
+        }
+
+        // Mettre à jour l'affichage
+        function updateDisplay() {
+            updateTotals();
+            updateActsTable();
+            
+            const hasActs = actsList.length > 0;
+            document.getElementById('actsList').style.display = hasActs ? 'block' : 'none';
+            document.getElementById('exportBtn').style.display = hasActs ? 'inline-block' : 'none';
+        }
+
+        // Mettre à jour les totaux
+        function updateTotals() {
+            const totalQuantity = actsList.reduce((sum, act) => sum + act.quantity, 0);
+            const totalGross = actsList.reduce((sum, act) => sum + act.totalBrut, 0);
+            const totalNet = actsList.reduce((sum, act) => sum + act.totalNet, 0);
+
+            document.getElementById('totalActs').textContent = totalQuantity;
+            document.getElementById('totalGross').textContent = totalGross.toFixed(2) + '€';
+            document.getElementById('totalNet').textContent = totalNet.toFixed(2) + '€';
+        }
+
+        // Mettre à jour le tableau des actes
+        function updateActsTable() {
+            const tbody = document.getElementById('actsTableBody');
+            tbody.innerHTML = '';
+
+            actsList.forEach(act => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                
+                const locationClass = act.location === 'Cabinet' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${act.timestamp.split(' ')[1]}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${act.label}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span class="px-2 py-1 rounded-full text-xs ${locationClass}">${act.location}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">${act.quantity}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${act.price.toFixed(2)}€</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${act.totalBrut.toFixed(2)}€</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${Math.round(act.commission * 100)}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">${act.totalNet.toFixed(2)}€</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button onclick="removeAct(${act.id})" class="text-red-600 hover:text-red-800 transition-colors">🗑️</button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // Réinitialiser le formulaire
+        function resetForm() {
+            document.getElementById('actType').value = 'consultation';
+            document.getElementById('actType').dispatchEvent(new Event('change'));
+            document.getElementById('actQuantity').value = '1';
+            updateTotalBrut();
+        }
+
+        // Réinitialiser tout
+        function resetAll() {
+            actsList = [];
+            updateDisplay();
+            resetForm();
+        }
+
+        // Sauvegarder la session
+        function saveSession() {
+            const totalQuantity = actsList.reduce((sum, act) => sum + act.quantity, 0);
+            const totalGross = actsList.reduce((sum, act) => sum + act.totalBrut, 0);
+            const totalNet = actsList.reduce((sum, act) => sum + act.totalNet, 0);
+            
+            alert(`Session sauvegardée!\n\nTotal actes: ${totalQuantity}\nHonoraires bruts: ${totalGross.toFixed(2)}€\nHonoraires nets: ${totalNet.toFixed(2)}€`);
+        }
+
+        // Export CSV
+        function exportToCSV() {
+            const totalGross = actsList.reduce((sum, act) => sum + act.totalBrut, 0);
+            const totalNet = actsList.reduce((sum, act) => sum + act.totalNet, 0);
+            const date = new Date().toLocaleDateString('fr-FR');
+            
+            let csvContent = `Relevé d'honoraires du;${date}\n\n`;
+            csvContent += 'Type d\'acte;Lieu;Quantité;Prix unitaire (€);Total brut (€);Commission;Total net (€)\n';
+            
+            actsList.forEach(act => {
+                csvContent += `${act.label};${act.location};${act.quantity};${act.price.toFixed(2)};${act.totalBrut.toFixed(2)};${Math.round(act.commission * 100)}%;${act.totalNet.toFixed(2)}\n`;
+            });
+            
+            csvContent += `\nTOTAL;;;;${totalGross.toFixed(2)};;${totalNet.toFixed(2)}`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `honoraires_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            resetForm();
+        });
+    </script>
+</body>
+</html>
